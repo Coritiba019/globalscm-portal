@@ -1,31 +1,71 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
-    </div>
+@extends('layouts.app')
 
-    @if (session('status') == 'verification-link-sent')
-        <div class="mb-4 font-medium text-sm text-green-600">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+@section('title', 'Recuperação de senha')
+
+@push('styles')
+<style>
+  .auth-wrap{min-height:calc(100dvh - 72px);display:grid;place-items:center;padding:2rem 1rem}
+  .auth-card{max-width:480px;width:100%;border:1px solid var(--border,#e5e7eb);background:var(--surface,#fff);
+    border-radius:16px;box-shadow:0 20px 48px rgba(0,0,0,.12);overflow:hidden}
+  .auth-card .card-header{background:linear-gradient(135deg,var(--brand,#0ea5e9),var(--brand-2,#3abff8));border:0;color:#0b1220}
+  .brand{font-weight:900;letter-spacing:.2px}
+  .badge-soft{border:1px solid var(--border,#e5e7eb);background:var(--surface,#fff);color:var(--muted,#6b7280);
+    font-weight:700;padding:.35rem .6rem;border-radius:999px}
+
+  /* Avatar corrigido */
+  .avatar-initials{
+    width:42px;height:42px;border-radius:999px;
+    display:grid;place-items:center;
+    font-weight:900;
+    color:#0b1220;
+    background:linear-gradient(135deg,#ffffff,#dbeafe);
+  }
+  [data-theme="dark"] .avatar-initials{ color:#0b1220; }
+</style>
+@endpush
+
+@section('content')
+<div class="auth-wrap container">
+  <div class="card auth-card">
+    <div class="card-header py-3">
+      <div class="d-flex align-items-center gap-3">
+        <span class="avatar-initials">G</span>
+        <div>
+          <div class="brand">{{ config('app.name','GlobalPag') }}</div>
+          <div class="small" style="opacity:.85;">Recuperação de senha</div>
         </div>
-    @endif
-
-    <div class="mt-4 flex items-center justify-between">
-        <form method="POST" action="{{ route('verification.send') }}">
-            @csrf
-
-            <div>
-                <x-primary-button>
-                    {{ __('Resend Verification Email') }}
-                </x-primary-button>
-            </div>
-        </form>
-
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-
-            <button type="submit" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                {{ __('Log Out') }}
-            </button>
-        </form>
+      </div>
     </div>
-</x-guest-layout>
+
+    <div class="card-body p-4">
+      {{-- Mantém compatibilidade com possíveis flashes --}}
+      @if (session('status'))
+        <div class="alert alert-info">{{ session('status') }}</div>
+      @endif
+
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle me-1"></i>
+        A recuperação de senha está temporariamente indisponível. Em breve ativaremos este recurso.
+      </div>
+
+      <p class="text-muted mb-4">
+        Caso precise de acesso imediato, entre em contato com o suporte do sistema.
+      </p>
+
+      <div class="d-grid">
+        <a href="{{ route('login') }}" class="btn btn-primary">
+          <i class="bi bi-box-arrow-in-right me-1"></i> Voltar ao login
+        </a>
+      </div>
+
+      <div class="mt-4 small">
+        <span class="badge-soft"><i class="bi bi-shield-lock me-1"></i> Segurança</span>
+        <ul class="mt-2 mb-0 ps-3 text-muted">
+          <li>Conexão protegida por HTTPS.</li>
+          <li>Ative 2FA quando disponível para mais segurança.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+@endsection

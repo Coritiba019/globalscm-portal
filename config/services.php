@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+        'globalscm' => [
+        'base_url' => env('GLOBALSCM_BASE_URL', 'http://127.0.0.1:3333'),
+        // Se sua API exigir token por usuário, você pode pegar do user e passar no Controller
+        // ou definir um token de serviço aqui:
+        'service_token' => env('GLOBALSCM_SERVICE_TOKEN', null),
+    ],
+
 ];
