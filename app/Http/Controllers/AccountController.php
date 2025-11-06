@@ -25,20 +25,20 @@ class AccountController extends Controller
         $q     = trim((string) $request->query('q', ''));
 
         try {
-            // 1) Busca contas na API externa (normalizado pelo service)
+            // 1) Lista contas (serviço já normaliza): digital_account_id, agency, account, digit, company, active...
             $resp   = $client->listAccounts($page, $limit);
-            $items  = Arr::get($resp, 'items', []);      // digital_account_id, agency, account, digit, company, active...
+            $items  = Arr::get($resp, 'items', []);
             $total  = (int) Arr::get($resp, 'totalItems', count($items));
             $pageN  = (int) Arr::get($resp, 'page', $page);
             $limN   = (int) Arr::get($resp, 'limit', $limit);
 
-            // 2) Mapeia rótulo e injeta __label
+            // 2) Injeta rótulo mapeado
             $items = array_map(function (array $acc) {
                 $acc['__label'] = AccountLabels::label((string) Arr::get($acc, 'account', ''));
                 return $acc;
             }, $items);
 
-            // 3) Filtro leve local (inclui rótulo)
+            // 3) Filtro local (inclui rótulo)
             if ($q !== '') {
                 $needle = mb_strtolower($q);
                 $items = array_values(array_filter($items, function ($acc) use ($needle) {
@@ -53,7 +53,7 @@ class AccountController extends Controller
                 $total = count($items);
             }
 
-            // 4) Índice de saldos (duas páginas p/ ~100 últimas posições)
+            // 4) Índice de saldos (2 páginas x 50 = ~100 mais recentes)
             $balancesIdx = [];
             foreach ([1, 2] as $pg) {
                 $b    = $client->balances($pg, 50);
@@ -69,7 +69,7 @@ class AccountController extends Controller
                 }
             }
 
-            // 5) Enriquecer itens com __balance / __dt_balance
+            // 5) Enriquecer itens com saldo e data
             $items = array_map(function ($acc) use ($balancesIdx) {
                 $id = (int) Arr::get($acc, 'digital_account_id');
                 $acc['__balance']    = Arr::get($balancesIdx, "$id.balance", null);
@@ -77,16 +77,20 @@ class AccountController extends Controller
                 return $acc;
             }, $items);
 
-            // 6) Paginação Laravel
+            // 6) Ordenar por saldo DESC; empates por dt_balance DESC
+            usort($items, function(array $a, array $b){
+                $aBal = is_null($a['__balance']) ? -INF : (float) $a['__balance'];
+                $bBal = is_null($b['__balance']) ? -INF : (float) $b['__balance'];
+                if ($aBal !== $bBal) return $bBal <=> $aBal;
+                $aDt = strtotime($a['__dt_balance'] ?? '1970-01-01 00:00:00');
+                $bDt = strtotime($b['__dt_balance'] ?? '1970-01-01 00:00:00');
+                return $bDt <=> $aDt;
+            });
+
+            // 7) Paginação
             $paginator = new LengthAwarePaginator(
-                $items,
-                $total,
-                $limN,
-                $pageN,
-                [
-                    'path'  => route('select-account'),
-                    'query' => $request->query(),
-                ]
+                $items, $total, $limN, $pageN,
+                ['path' => route('select-account'), 'query' => $request->query()]
             );
 
             return view('accounts.select', [

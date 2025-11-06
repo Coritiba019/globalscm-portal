@@ -18,56 +18,96 @@
     --success:#16a34a;
     --danger:#ef4444;
     --warning:#f59e0b;
+
+    /* Tipografia fluida */
+    --fz-xxs: clamp(.78rem, 2vw, .85rem);
+    --fz-xs:  clamp(.86rem, 2.2vw, .92rem);
+    --fz-sm:  clamp(.92rem, 2.4vw, 1rem);
+    --fz-md:  clamp(1.05rem, 2.7vw, 1.15rem);
+    --fz-lg:  clamp(1.25rem, 3.2vw, 1.5rem);
   }
 
-  .page-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.75rem}
-  .subtle{color:var(--muted)}
-  .context-pill{display:inline-flex;align-items:center;gap:.5rem;background:#fff;border:1px solid var(--card-border);color:var(--ink);padding:.4rem .65rem;border-radius:999px;font-weight:600}
+  /* Cabeçalho */
+  .page-head{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.75rem;
+    flex-wrap:wrap;
+  }
+  .page-head h1{ font-size: var(--fz-md); margin: 0; }
+  .subtle{ color:var(--muted); font-size: var(--fz-xs); }
+  .context-wrap{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+  .context-pill{
+    display:inline-flex; align-items:center; gap:.5rem; background:#fff;
+    border:1px solid var(--card-border); color:var(--ink); padding:.35rem .6rem; border-radius:999px; font-weight:650;
+    font-size: var(--fz-xxs);
+  }
+  .context-line{ white-space:nowrap; }
 
-  /* Ações rápidas / filtros */
-  .quick-filters{display:flex;gap:.5rem;flex-wrap:wrap}
-  .chip{border:1px solid var(--card-border);background:#fff;color:var(--ink);padding:.35rem .6rem;border-radius:999px;font-weight:600}
-  .chip.active{border-color:#b6e3ff;box-shadow:0 0 0 3px rgba(14,165,233,.15)}
-  .btn-ghost{background:#fff;border:1px solid var(--card-border);color:var(--ink)}
-  .btn-ghost:hover{border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,.15)}
+  /* Ações / filtros */
+  .quick-filters{ display:flex; gap:.5rem; flex-wrap:wrap }
+  .chip{ border:1px solid var(--card-border); background:#fff; color:var(--ink); padding:.3rem .55rem; border-radius:999px; font-weight:650; font-size: var(--fz-xxs) }
+  .chip.active{ border-color:#b6e3ff; box-shadow:0 0 0 3px rgba(14,165,233,.15) }
+  .btn-ghost{ background:#fff; border:1px solid var(--card-border); color:var(--ink) }
+  .btn-ghost:hover{ border-color:var(--primary); box-shadow: 0 0 0 3px rgba(14,165,233,.15) }
 
   /* KPIs */
-  .kpi{position:relative;border:1px solid var(--card-border);border-radius:16px;background:#fff;padding:16px;height:100%;box-shadow:0 8px 24px rgba(0,0,0,.05)}
-  .kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,var(--primary),var(--primary-2))}
-  .kpi .label{color:var(--muted);font-size:.9rem}
-  .kpi .value{font-weight:800;font-size:1.6rem;letter-spacing:.01em;color:var(--ink)}
-  .kpi .meta{color:var(--muted);font-size:.85rem}
-  .kpi .delta{display:inline-flex;gap:.35rem;align-items:center;font-weight:700;font-size:.9rem;padding:.15rem .5rem;border-radius:999px;border:1px solid}
-  .kpi .delta.up{color:#166534;border-color:#bbf7d0;background:#ecfdf5}
-  .kpi .delta.down{color:#7f1d1d;border-color:#fecaca;background:#fef2f2}
+  .kpi{
+    position:relative; border:1px solid var(--card-border); border-radius:16px; background:#fff; padding:14px; height:100%;
+    box-shadow:0 8px 24px rgba(0,0,0,.05); display:grid; gap:.4rem;
+  }
+  .kpi::before{
+    content:""; position:absolute; inset:0 0 auto 0; height:4px; border-radius:16px 16px 0 0;
+    background:linear-gradient(90deg,var(--primary),var(--primary-2));
+  }
+  .kpi .row1{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+  .kpi .label{ color:var(--muted); font-size: var(--fz-xxs); display:flex; align-items:center; gap:.4rem; }
+  .kpi .label i{ opacity:.8; }
+  .kpi .value{ font-weight:850; font-size: var(--fz-lg); letter-spacing:.01em; color:var(--ink) }
+  .kpi .meta{ color:var(--muted); font-size: var(--fz-xxs) }
+  .kpi .delta{ display:inline-flex; gap:.35rem; align-items:center; font-weight:750; font-size: var(--fz-xxs); padding:.15rem .45rem; border-radius:999px; border:1px solid }
+  .kpi .delta.up   { color:#166534; border-color:#bbf7d0; background:#ecfdf5 }
+  .kpi .delta.down { color:#7f1d1d; border-color:#fecaca; background:#fef2f2 }
+
+  /* Grid de KPIs: 2 col no mobile, 4 no desktop */
+  .kpi-grid{ display:grid; gap:.8rem }
+  @media (min-width: 540px){ .kpi-grid{ grid-template-columns: repeat(2, 1fr) } }
+  @media (min-width: 992px){ .kpi-grid{ grid-template-columns: repeat(4, 1fr) } }
 
   /* Cards genéricos */
-  .card-plain{border:1px solid var(--card-border);border-radius:16px;background:#fff;box-shadow:0 10px 28px rgba(0,0,0,.05)}
-  .card-plain .card-header{border-bottom:1px dashed var(--card-border);background:#fff}
-  .card-plain .card-footer{border-top:1px dashed var(--card-border);background:#fff}
+  .card-plain{ border:1px solid var(--card-border); border-radius:16px; background:#fff; box-shadow:0 10px 28px rgba(0,0,0,.05) }
+  .card-plain .card-header{ border-bottom:1px dashed var(--card-border); background:#fff; padding:.8rem 1rem; font-size: var(--fz-sm) }
+  .card-plain .card-body{ padding: 1rem }
+  .card-plain .card-footer{ border-top:1px dashed var(--card-border); background:#fff; padding:.7rem 1rem; }
 
   /* Gráficos */
-  #dailyChart{max-height:320px}
-  #statusChart{max-height:320px}
-  .chart-legend{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;font-size:.9rem}
-  .legend-dot{width:.75rem;height:.75rem;border-radius:999px;display:inline-block}
-
-  /* Tabela */
-  .table thead th{border-top:0;color:var(--muted);font-weight:700;letter-spacing:.02em;background:#fff;position:sticky;top:0;z-index:1}
-  .table td,.table th{vertical-align:middle}
-  .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  .badge-soft{border:1px solid transparent;font-weight:700}
-  .badge-soft.success{background:#ecfdf5;color:#166534;border-color:#bbf7d0}
-  .badge-soft.error{background:#fef2f2;color:#7f1d1d;border-color:#fecaca}
-  .badge-soft.neutral{background:#f4f4f5;color:#27272a;border-color:#e4e4e7}
-
-  /* Barra de sucesso (PIX) */
-  .progress{height:.65rem}
-  .progress .progress-bar{font-size:.7rem}
+  #dailyChartWrap, #statusChartWrap{ height: clamp(240px, 42vw, 340px); }
+  .chart-legend{ display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; font-size: var(--fz-xxs) }
+  .legend-dot{ width:.7rem; height:.7rem; border-radius:999px; display:inline-block }
 
   /* Grid responsivo para 2 gráficos lado a lado */
-  .grid-2{display:grid;gap:1rem}
-  @media (min-width: 992px){ .grid-2{grid-template-columns:1fr 1fr} }
+  .grid-2{ display:grid; gap:1rem }
+  @media (min-width: 992px){ .grid-2{ grid-template-columns:1fr 1fr } }
+
+  /* Tabela */
+  .table thead th{ border-top:0; color:var(--muted); font-weight:750; letter-spacing:.02em; background:#fff; position:sticky; top:0; z-index:1; font-size: var(--fz-xxs) }
+  .table td, .table th{ vertical-align:middle; }
+  .table td{ font-size: var(--fz-xs) }
+  .mono{ font-variant-numeric:tabular-nums; font-family:ui-monospace,SFMono-Regular,Menlo,monospace }
+  .badge-soft{ border:1px solid transparent; font-weight:750; font-size: var(--fz-xxs) }
+  .badge-soft.success{ background:#ecfdf5; color:#166534; border-color:#bbf7d0 }
+  .badge-soft.error  { background:#fef2f2; color:#7f1d1d; border-color:#fecaca }
+  .badge-soft.neutral{ background:#f4f4f5; color:#27272a; border-color:#e4e4e7 }
+  .table-responsive{ max-height: 60vh; }
+
+  /* Barra de sucesso (PIX) */
+  .progress{ height:.6rem }
+  .progress .progress-bar{ font-size:.65rem }
+
+  /* Ajustes mobile */
+  @media (max-width: 576px){
+    .page-head{ gap:.6rem }
+    .context-wrap{ gap:.35rem }
+    .context-line{ width:100% }
+  }
 </style>
 @endpush
 
@@ -79,9 +119,11 @@
     <div>
       <h1 class="h4 mb-1">Visão Geral</h1>
       <div class="subtle">
-        Conta ativa
-        <span class="context-pill"><i class="bi bi-credit-card-2-front"></i> #{{ $digital }}</span>
-        <span class="ms-2">Agência <strong>{{ $account->agencyNumber }}</strong> · Conta <strong>{{ $account->accountNumber }}</strong></span>
+        <span class="context-wrap">
+          <span class="context-pill"><i class="bi bi-credit-card-2-front"></i> #{{ $digital }}</span>
+          <span class="context-line">Agência <strong>{{ $account->agencyNumber }}</strong></span>
+          <span class="context-line">· Conta <strong>{{ $account->accountNumber }}</strong></span>
+        </span>
       </div>
     </div>
     <div class="quick-filters">
@@ -115,7 +157,6 @@
           </form>
         </div>
       </div>
-      {{-- (Opcional) Exportação – ajuste a rota se necessário --}}
       <a href="{{ route('reports.daily-transactions', ['digital' => $digital]) }}" class="btn btn-ghost btn-sm">
         <i class="bi bi-download me-1"></i> Exportar
       </a>
@@ -123,55 +164,53 @@
   </div>
 
   {{-- KPIs --}}
-  <div class="row g-3 mb-3">
-    <div class="col-12 col-sm-6 col-lg-3">
-      <div class="kpi">
-        <div class="label">Saldo atual</div>
-        <div class="value">R$ {{ $kpis['balance'] }}</div>
-        <div class="meta mt-1">Período selecionado</div>
+  <div class="kpi-grid mb-3">
+    <div class="kpi">
+      <div class="row1">
+        <div class="label"><i class="bi bi-wallet2"></i> Saldo atual</div>
+      </div>
+      <div class="value">R$ {{ $kpis['balance'] }}</div>
+      <div class="meta">Período selecionado</div>
+    </div>
+
+    <div class="kpi">
+      <div class="row1">
+        <div class="label"><i class="bi bi-repeat"></i> Transações</div>
+        @php $delta = $kpis['delta_tx'] ?? 0; @endphp
+        @if($delta !== 0)
+          <span class="delta {{ $delta>0 ? 'up' : 'down' }}">
+            <i class="bi {{ $delta>0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>
+            {{ ($delta>0?'+':'') . $delta }}%
+          </span>
+        @endif
+      </div>
+      <div class="value mb-0">{{ number_format($kpis['total_tx'],0,',','.') }}</div>
+      <div class="meta">vs período anterior</div>
+    </div>
+
+    <div class="kpi">
+      <div class="row1">
+        <div class="label"><i class="bi bi-lightning-charge"></i> PIX (sucesso)</div>
+      </div>
+      @php
+        $bd = $kpis['status_breakdown'] ?? [];
+        $succ = (int)($bd['SUCCESS'] ?? ($kpis['pix_success'] ?? 0));
+        $total = (int)($kpis['total_tx'] ?? 0);
+        $rate = $total>0 ? round($succ*100/$total) : 0;
+      @endphp
+      <div class="value">{{ number_format($kpis['pix_success'] ?? $succ,0,',','.') }}</div>
+      <div class="meta mt-1">Taxa de sucesso</div>
+      <div class="progress" role="progressbar" aria-valuenow="{{ $rate }}" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar bg-success" style="width: {{ $rate }}%">{{ $rate }}%</div>
       </div>
     </div>
 
-    <div class="col-12 col-sm-6 col-lg-3">
-      <div class="kpi">
-        <div class="label">Transações</div>
-        <div class="d-flex align-items-center gap-2">
-          <div class="value mb-0">{{ number_format($kpis['total_tx'],0,',','.') }}</div>
-          @php $delta = $kpis['delta_tx'] ?? 0; @endphp
-          @if($delta !== 0)
-            <span class="delta {{ $delta>0 ? 'up' : 'down' }}">
-              <i class="bi {{ $delta>0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>
-              {{ ($delta>0?'+':'') . $delta }}%
-            </span>
-          @endif
-        </div>
-        <div class="meta mt-1">vs período anterior</div>
+    <div class="kpi">
+      <div class="row1">
+        <div class="label"><i class="bi bi-calendar2-week"></i> Dias no período</div>
       </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-lg-3">
-      <div class="kpi">
-        <div class="label">PIX (sucesso)</div>
-        @php
-          $bd = $kpis['status_breakdown'] ?? [];
-          $succ = (int)($bd['SUCCESS'] ?? ($kpis['pix_success'] ?? 0));
-          $total = (int)($kpis['total_tx'] ?? 0);
-          $rate = $total>0 ? round($succ*100/$total) : 0;
-        @endphp
-        <div class="value">{{ number_format($kpis['pix_success'] ?? $succ,0,',','.') }}</div>
-        <div class="meta mt-2">Taxa de sucesso</div>
-        <div class="progress" role="progressbar" aria-valuenow="{{ $rate }}" aria-valuemin="0" aria-valuemax="100">
-          <div class="progress-bar bg-success" style="width: {{ $rate }}%">{{ $rate }}%</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-lg-3">
-      <div class="kpi">
-        <div class="label">Dias no período</div>
-        <div class="value">{{ number_format($kpis['total_days'],0,',','.') }}</div>
-        <div class="meta mt-1">{{ \Illuminate\Support\Str::of($period['initial'])->replace('-','/') }} — {{ \Illuminate\Support\Str::of($period['final'])->replace('-','/') }}</div>
-      </div>
+      <div class="value">{{ number_format($kpis['total_days'],0,',','.') }}</div>
+      <div class="meta">{{ \Illuminate\Support\Str::of($period['initial'])->replace('-','/') }} — {{ \Illuminate\Support\Str::of($period['final'])->replace('-','/') }}</div>
     </div>
   </div>
 
@@ -185,7 +224,7 @@
         </div>
       </div>
       <div class="card-body">
-        <canvas id="dailyChart" height="110"></canvas>
+        <div id="dailyChartWrap"><canvas id="dailyChart"></canvas></div>
       </div>
     </div>
 
@@ -195,7 +234,7 @@
       </div>
       <div class="card-body d-flex align-items-center justify-content-center">
         <div class="w-100" style="max-width:520px">
-          <canvas id="statusChart" height="110"></canvas>
+          <div id="statusChartWrap"><canvas id="statusChart"></canvas></div>
         </div>
       </div>
       @php
@@ -216,15 +255,15 @@
     <div class="card-header d-flex justify-content-between align-items-center">
       <span class="fw-semibold"><i class="bi bi-clock-history me-2 text-primary"></i>Últimas transações</span>
       <div class="d-flex gap-2">
-        {{-- Slots para filtros rápidos, se quiser --}}
+        {{-- Espaço para filtros rápidos se desejar --}}
       </div>
     </div>
     <div class="card-body p-0">
-      <div class="table-responsive" style="max-height: 60vh">
+      <div class="table-responsive">
         <table class="table table-hover table-nowrap align-middle mb-0">
           <thead>
             <tr>
-              <th style="width: 180px;">Data/Hora</th>
+              <th style="width: 160px;">Data/Hora</th>
               <th style="width: 90px;">Tipo</th>
               <th style="width: 120px;">Subtipo</th>
               <th>Descrição</th>
@@ -284,86 +323,80 @@
 (function(){
   const labels = @json($labels);
   const values = @json($values);
-  const bd    = @json($bdJS);
   const ok    = Number({{ $okJS }});
   const err   = Number({{ $errJS }});
   const pend  = Number({{ $pendJS }});
 
-  // Helpers
-  const $ = (sel,ctx=document)=>ctx.querySelector(sel);
   const br = n => (n ?? 0).toLocaleString('pt-BR');
 
-  // Linha (daily)
-  const ctx = document.getElementById('dailyChart').getContext('2d');
-  const grad = ctx.createLinearGradient(0, 0, 0, 260);
-  grad.addColorStop(0, 'rgba(14,165,233,0.25)');
-  grad.addColorStop(1, 'rgba(14,165,233,0.02)');
+  // LINE
+  {
+    const wrap = document.getElementById('dailyChartWrap');
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, wrap.clientHeight);
+    grad.addColorStop(0, 'rgba(14,165,233,0.25)');
+    grad.addColorStop(1, 'rgba(14,165,233,0.02)');
 
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Transações/dia',
-        data: values,
-        borderWidth: 2,
-        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#0ea5e9',
-        backgroundColor: grad,
-        fill: true,
-        tension: .25,
-        pointRadius: 2,
-        pointHoverRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins:{
-        legend: { display: false },
-        tooltip: {
-          mode: 'index',
-          intersect: false,
-          callbacks:{
-            label: (ctx) => ` ${ctx.dataset.label}: ${br(ctx.parsed.y)}`
-          }
-        }
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Transações/dia',
+          data: values,
+          borderWidth: 2,
+          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#0ea5e9',
+          backgroundColor: grad,
+          fill: true,
+          tension: .25,
+          pointRadius: 2,
+          pointHoverRadius: 4
+        }]
       },
-      scales: {
-        x: { grid: { display:false } },
-        y: {
-          beginAtZero: true,
-          ticks: { precision:0, callback: v => br(v) },
-          grid: { color: 'rgba(0,0,0,.06)' }
-        }
-      }
-    }
-  });
-
-  // Donut (status)
-  const ctx2 = document.getElementById('statusChart').getContext('2d');
-  new Chart(ctx2, {
-    type: 'doughnut',
-    data: {
-      labels: ['SUCCESS', 'ERROR', 'PENDING'],
-      datasets: [{
-        data: [ok, err, pend],
-        backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      cutout: '62%',
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => ` ${ctx.label}: ${br(ctx.parsed)}`
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins:{
+          legend: { display: false },
+          tooltip: { callbacks:{ label: (ctx) => ` ${ctx.dataset.label}: ${br(ctx.parsed.y)}` } }
+        },
+        scales: {
+          x: { grid: { display:false } },
+          y: {
+            beginAtZero: true,
+            ticks: { precision:0, callback: v => br(v) },
+            grid: { color: 'rgba(0,0,0,.06)' }
           }
         }
       }
-    }
-  });
+    });
+  }
+
+  // DONUT
+  {
+    const ctx2 = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['SUCCESS', 'ERROR', 'PENDING'],
+        datasets: [{
+          data: [ok, err, pend],
+          backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${br(ctx.parsed)}` } }
+        }
+      }
+    });
+  }
 })();
 </script>
 @endsection

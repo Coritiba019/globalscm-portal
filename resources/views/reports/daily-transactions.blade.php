@@ -14,6 +14,13 @@
     --primary:#0ea5e9;
     --primary-2:#3abff8;
     --success:#16a34a;
+
+    /* Tipografia fluida */
+    --fz-xxs: clamp(.78rem, 2vw, .85rem);
+    --fz-xs:  clamp(.86rem, 2.2vw, .95rem);
+    --fz-sm:  clamp(.95rem, 2.4vw, 1.05rem);
+    --fz-md:  clamp(1.1rem, 3vw, 1.25rem);
+    --fz-lg:  clamp(1.25rem, 3.5vw, 1.6rem);
   }
   [data-theme="dark"]{
     --ink:#e7ebf0;
@@ -24,39 +31,65 @@
     --border:rgba(255,255,255,.12);
   }
 
-  /* ————— Layout base ————— */
-  .page-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.75rem}
-  .subtle{color:var(--muted)}
-  .btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--ink)}
-  .btn-ghost:hover{border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,.18)}
-  .context-pill{display:inline-flex;align-items:center;gap:.45rem;padding:.35rem .6rem;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-weight:700}
+  /* ——— Layout base ——— */
+  .page-head{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.75rem;
+    flex-wrap:wrap;
+  }
+  .page-head h2{ font-size: var(--fz-md); margin:0; }
+  .subtle{ color:var(--muted); font-size: var(--fz-xs); }
+  .btn-ghost{ background:var(--surface); border:1px solid var(--border); color:var(--ink) }
+  .btn-ghost:hover{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(14,165,233,.18) }
+  .context-pill{
+    display:inline-flex; align-items:center; gap:.45rem; padding:.35rem .6rem; border-radius:999px;
+    background:var(--surface); border:1px solid var(--border); font-weight:700; font-size: var(--fz-xxs);
+  }
 
-  /* ————— Cards KPI ————— */
-  .kpi{position:relative;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:0 10px 28px rgba(0,0,0,.06);padding:14px}
-  .kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,var(--primary),var(--primary-2))}
-  .kpi .label{color:var(--muted);font-size:.9rem}
-  .kpi .value{font-weight:800;font-size:1.6rem;color:var(--ink)}
-  .kpi .meta{color:var(--muted);font-size:.85rem}
+  /* ——— Cards KPI ——— */
+  .kpi{ position:relative; border:1px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:0 10px 28px rgba(0,0,0,.06); padding:14px; height:100% }
+  .kpi::before{ content:""; position:absolute; inset:0 0 auto 0; height:4px; border-radius:16px 16px 0 0; background:linear-gradient(90deg,var(--primary),var(--primary-2)) }
+  .kpi .label{ color:var(--muted); font-size: var(--fz-xxs) }
+  .kpi .value{ font-weight:800; font-size: var(--fz-lg); color:var(--ink) }
+  .kpi .meta{ color:var(--muted); font-size: var(--fz-xxs) }
 
-  /* ————— Cartões genéricos ————— */
-  .card-plain{border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:0 10px 28px rgba(0,0,0,.06)}
-  .card-plain .card-header{border-bottom:1px dashed var(--border);background:var(--surface)}
-  .card-plain .card-footer{border-top:1px dashed var(--border);background:var(--surface)}
+  /* KPI grid: 2 col mobile → 4 col desktop */
+  .kpi-grid{ display:grid; gap:.75rem }
+  @media (min-width: 540px){ .kpi-grid{ grid-template-columns: repeat(2, 1fr) } }
+  @media (min-width: 992px){ .kpi-grid{ grid-template-columns: repeat(4, 1fr) } }
 
-  /* ————— Chips ————— */
-  .chip{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .6rem;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--ink);font-weight:600}
-  .chip i{opacity:.75}
-  .chip.active{border-color:#b6e3ff;box-shadow:0 0 0 3px rgba(14,165,233,.15)}
+  /* ——— Cartões genéricos ——— */
+  .card-plain{ border:1px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:0 10px 28px rgba(0,0,0,.06) }
+  .card-plain .card-header{ border-bottom:1px dashed var(--border); background:var(--surface); padding:.8rem 1rem; font-weight:600 }
+  .card-plain .card-footer{ border-top:1px dashed var(--border); background:var(--surface); }
 
-  /* ————— Gráfico ————— */
-  #dailyChart{max-height:320px}
-  .chart-legend{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;font-size:.9rem}
-  .legend-dot{width:.75rem;height:.75rem;border-radius:999px;display:inline-block}
+  /* ——— Chips/presets ——— */
+  .chip{ display:inline-flex; align-items:center; gap:.4rem; padding:.35rem .6rem; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--ink); font-weight:650; font-size: var(--fz-xxs) }
+  .chip i{ opacity:.75 }
+  .chip.active{ border-color:#b6e3ff; box-shadow:0 0 0 3px rgba(14,165,233,.15) }
 
-  /* ————— Tabela ————— */
-  .table thead th{border-top:0;color:var(--ink-weak);font-weight:700;letter-spacing:.02em;background:var(--surface);position:sticky;top:0;z-index:1}
-  .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  .table-hover tbody tr:hover{background:rgba(14,165,233,.06)}
+  /* ——— Gráfico ——— */
+  #dailyChartWrap{ height: clamp(240px, 40vw, 360px); }
+  #dailyChart{ width:100%; height:100% }
+  .chart-legend{ display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; font-size: var(--fz-xxs) }
+  .legend-dot{ width:.7rem; height:.7rem; border-radius:999px; display:inline-block }
+
+  /* ——— Tabela ——— */
+  .table thead th{ border-top:0; color:var(--ink-weak); font-weight:750; letter-spacing:.02em; background:var(--surface); position:sticky; top:0; z-index:1; font-size: var(--fz-xxs) }
+  .table td{ font-size: var(--fz-xs) }
+  .mono{ font-variant-numeric:tabular-nums; font-family:ui-monospace,SFMono-Regular,Menlo,monospace }
+  .table-hover tbody tr:hover{ background:rgba(14,165,233,.06) }
+
+  /* ——— Filtros responsivos ——— */
+  .filters-grid{ display:grid; gap:.6rem }
+  @media (min-width: 768px){ .filters-grid{ grid-template-columns: repeat(6, 1fr) } }
+  .filters-actions{ display:flex; justify-content:flex-end; gap:.5rem; flex-wrap:wrap }
+
+  /* ——— Print ——— */
+  @media print{
+    .page-head .btn, .card-header .btn, .card-header .chip, .card-header .dropdown, .filters-actions{ display:none !important }
+    .card-plain, .kpi{ box-shadow:none !important }
+    body{ background:#fff }
+  }
 </style>
 @endpush
 
@@ -99,12 +132,12 @@
       @endif
     </div>
     <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-sm-2">
+      <form method="get" class="filters-grid">
+        <div>
           <label class="form-label">Digital</label>
           <input type="text" name="digital" class="form-control" value="{{ old('digital', $digital) }}" placeholder="ex: 1222">
         </div>
-        <div class="col-sm-2">
+        <div>
           <label class="form-label">Tipo</label>
           @php $type = $type ?? 'todos'; @endphp
           <select name="type" class="form-select">
@@ -113,23 +146,32 @@
             <option value="debit"  {{ $type==='debit'?'selected':'' }}>Débito</option>
           </select>
         </div>
-        <div class="col-sm-2">
+        <div>
           <label class="form-label">SubTipo</label>
           <input type="text" name="subType" class="form-control" value="{{ old('subType', $subType) }}" placeholder="PIX, TED...">
         </div>
-        <div class="col-sm-2">
+        <div>
           <label class="form-label">Status</label>
           <input type="text" name="status" class="form-control" value="{{ old('status', $status) }}" placeholder="SUCCESS, ERROR">
         </div>
-        <div class="col-sm-2">
+        <div>
           <label class="form-label">Inicial</label>
           <input type="date" name="initial" class="form-control" value="{{ old('initial', $initial) }}">
         </div>
-        <div class="col-sm-2">
+        <div>
           <label class="form-label">Final</label>
           <input type="date" name="final" class="form-control" value="{{ old('final', $final) }}">
         </div>
-        <div class="col-12 d-flex justify-content-end gap-2">
+
+        {{-- Presets de período --}}
+        <div class="d-flex align-items-center gap-2 flex-wrap" style="grid-column: 1 / -1">
+          <span class="text-muted small me-1">Atalhos:</span>
+          <a class="chip {{ request('range')==='7d' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['range'=>'7d']) }}"><i class="bi bi-lightning"></i> 7d</a>
+          <a class="chip {{ request('range')==='15d' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['range'=>'15d']) }}"><i class="bi bi-lightning"></i> 15d</a>
+          <a class="chip {{ request('range')==='30d' ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['range'=>'30d']) }}"><i class="bi bi-lightning"></i> 30d</a>
+        </div>
+
+        <div class="filters-actions" style="grid-column: 1 / -1">
           <a class="btn btn-ghost" href="{{ url()->current() }}"><i class="bi bi-x-lg me-1"></i> Limpar</a>
           <button class="btn btn-primary"><i class="bi bi-funnel me-1"></i> Aplicar</button>
         </div>
@@ -138,37 +180,30 @@
   </div>
 
   {{-- KPIs --}}
-  <div class="row g-3 mb-3">
-    <div class="col-md-3">
-      <div class="kpi h-100">
-        <div class="label">Total de dias</div>
-        <div class="value">{{ number_format($summary['totalDays'] ?? 0, 0, ',', '.') }}</div>
-        <div class="meta">No intervalo selecionado</div>
-      </div>
+  <div class="kpi-grid mb-3">
+    <div class="kpi">
+      <div class="label">Total de dias</div>
+      <div class="value">{{ number_format($summary['totalDays'] ?? 0, 0, ',', '.') }}</div>
+      <div class="meta">No intervalo selecionado</div>
     </div>
-    <div class="col-md-3">
-      <div class="kpi h-100">
-        <div class="label">Total de transações</div>
-        <div class="value">{{ number_format($summary['totalTransactions'] ?? 0, 0, ',', '.') }}</div>
-        <div class="meta">Somatório por dia</div>
-      </div>
+    <div class="kpi">
+      <div class="label">Total de transações</div>
+      <div class="value">{{ number_format($summary['totalTransactions'] ?? 0, 0, ',', '.') }}</div>
+      <div class="meta">Somatório por dia</div>
     </div>
-    <div class="col-md-6">
-      <div class="kpi h-100">
-        <div class="label">Filtros ativos</div>
-        <div class="mt-1">
-          @if(!empty($filters))
-            @foreach($filters as $k => $v)
-              @if($v !== null && $v !== '')
-                <span class="chip me-1 mb-1"><i class="bi bi-sliders"></i> {{ $k }}: <strong>{{ is_array($v)?json_encode($v):$v }}</strong></span>
-              @endif
-            @endforeach
-          @else
-            <span class="text-muted">Nenhum filtro aplicado.</span>
-          @endif
-        </div>
-        <div class="meta mt-2">Use os campos acima para refinar o gráfico e a tabela.</div>
-      </div>
+    <div class="kpi">
+      <div class="label">Média/dia</div>
+      @php
+        $td = max(1, (int)($summary['totalDays'] ?? 0));
+        $avg = (int)($summary['totalTransactions'] ?? 0) / $td;
+      @endphp
+      <div class="value">{{ number_format($avg, 0, ',', '.') }}</div>
+      <div class="meta">Transações</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Maior volume (dia)</div>
+      <div class="value">{{ number_format($summary['peak'] ?? 0, 0, ',', '.') }}</div>
+      <div class="meta">{{ $summary['peakDate'] ?? '—' }}</div>
     </div>
   </div>
 
@@ -181,7 +216,9 @@
       </div>
     </div>
     <div class="card-body">
-      <canvas id="dailyChart" height="120"></canvas>
+      <div id="dailyChartWrap">
+        <canvas id="dailyChart"></canvas>
+      </div>
     </div>
   </div>
 
@@ -231,10 +268,11 @@
     const values = @json($values);
 
     const canvas = document.getElementById('dailyChart');
-    const ctx = canvas.getContext('2d');
+    const wrap   = document.getElementById('dailyChartWrap');
+    const ctx    = canvas.getContext('2d');
 
-    // Gradiente suave
-    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    // Gradiente suave baseado na altura do container
+    const grad = ctx.createLinearGradient(0, 0, 0, wrap.clientHeight || 320);
     grad.addColorStop(0, 'rgba(14,165,233,.25)');
     grad.addColorStop(1, 'rgba(14,165,233,.02)');
 
@@ -257,18 +295,17 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins:{
           legend: { display: false },
           tooltip: {
-            mode: 'index',
-            intersect: false,
             callbacks:{
               label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y ?? 0).toLocaleString('pt-BR')}`
             }
           }
         },
         scales: {
-          x: { grid: { display:false }},
+          x: { grid: { display:false } },
           y: {
             beginAtZero: true,
             ticks: { precision: 0, callback: v => Number(v ?? 0).toLocaleString('pt-BR') },
