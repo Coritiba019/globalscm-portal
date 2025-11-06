@@ -14,12 +14,16 @@ class GlobalScmClient
     private Client $http;
     private GlobalSetting $cfg;
 
+    /** Hosts */
+    private const HOST_BACKOFFICE = 'https://admin-backoffice-api-prod.globalscm.app.br';
+    private const HOST_LEGACY     = 'https://api.globalscm.app.br';
+
     public function __construct()
     {
         $this->cfg = GlobalSetting::query()->firstOrFail();
 
+        // Sem base_uri: montamos URL absoluta a cada request.
         $this->http = new Client([
-            'base_uri'    => rtrim($this->cfg->api_base, '/'),
             'timeout'     => 30,
             'http_errors' => false,
             'headers'     => [
@@ -29,6 +33,42 @@ class GlobalScmClient
             ],
         ]);
     }
+
+    /** ===================== HOST ROUTER ===================== */
+
+    private function pickHost(string $method, string $path): string
+    {
+        $method = strtoupper($method);
+
+        // Backoffice (novo)
+        if (
+            ($method === 'POST' && str_starts_with($path, '/internal/api/v1/reports/')) ||
+            ($method === 'GET'  && $path === '/internal/api/v1/transactions') ||
+            ($method === 'GET'  && $path === '/internal/api/v1/transactions/status/v2')
+        ) {
+            return self::HOST_BACKOFFICE;
+        }
+
+        // Legacy (ainda lá)
+        if (
+            ($method === 'POST' && $path === '/internal/api/v1/auth/login') ||
+            ($method === 'GET'  && $path === '/internal/api/v1/account')   ||
+            ($method === 'GET'  && $path === '/internal/api/v1/balances')  // <- balances vai para LEGACY
+        ) {
+            return self::HOST_LEGACY;
+        }
+
+        // Fallback — preferir Backoffice
+        return self::HOST_BACKOFFICE;
+    }
+
+    private function buildUrl(string $method, string $path): string
+    {
+        $base = rtrim($this->pickHost($method, $path), '/');
+        return $base . $path;
+    }
+
+    /** ======================== AUTH ========================= */
 
     /** Garante que há token válido antes de chamar a API */
     private function ensureToken(): void
@@ -47,7 +87,7 @@ class GlobalScmClient
         }
     }
 
-    /** Faz login na API e persiste token/expiração em global_settings */
+    /** Faz login (LEGACY) e persiste token/expiração em global_settings */
     private function loginAndPersist(): void
     {
         $body = [
@@ -55,8 +95,11 @@ class GlobalScmClient
             'password' => $this->cfg->service_password,
         ];
 
+        $loginPath = '/internal/api/v1/auth/login';
+        $url       = $this->buildUrl('POST', $loginPath);
+
         try {
-            $res = $this->http->post('/internal/api/v1/auth/login', ['json' => $body]);
+            $res = $this->http->post($url, ['json' => $body]);
         } catch (GuzzleException $e) {
             throw new \RuntimeException('Falha ao autenticar na API externa: ' . $e->getMessage(), 0, $e);
         }
@@ -82,19 +125,16 @@ class GlobalScmClient
             throw new \RuntimeException('Resposta de login sem token.');
         }
 
-        // 1) Tenta extrair exp direto do JWT
+        // 1) Tenta extrair exp do JWT
         $expiresAt = self::jwtExpOrNull($token);
 
-        // 2) Caso não tenha exp no JWT, usa a heurística do expires_in/expiresAt
+        // 2) Se não houver, usa heurística
         if (!$expiresAt) {
             if (is_numeric($expires)) {
                 $n = (int) $expires;
-
-                if ($n > 60 * 60 * 24 * 30) {
-                    $expiresAt = CarbonImmutable::createFromTimestampUTC($n);
-                } else {
-                    $expiresAt = now()->addSeconds($n);
-                }
+                $expiresAt = $n > 60 * 60 * 24 * 30
+                    ? CarbonImmutable::createFromTimestampUTC($n)
+                    : now()->addSeconds($n);
             } elseif (is_string($expires)) {
                 $expiresAt = CarbonImmutable::parse($expires);
             } else {
@@ -108,7 +148,7 @@ class GlobalScmClient
         ])->save();
     }
 
-    /** Tenta ler o campo exp de um JWT e devolve um CarbonImmutable UTC, ou null se não houver. */
+    /** Lê exp (UTC) de um JWT, ou null se não houver. */
     private static function jwtExpOrNull(string $jwt): ?CarbonImmutable
     {
         try {
@@ -121,16 +161,18 @@ class GlobalScmClient
                 return CarbonImmutable::createFromTimestampUTC((int) $payload['exp']);
             }
         } catch (\Throwable $e) {
-            // Silencia erros de parsing de JWT e segue fluxo normal
+            // ignora parsing errors
         }
         return null;
     }
+
+    /** ===================== CORE REQUEST ==================== */
 
     /**
      * Faz request com Bearer (renova em 401) e retorna array.
      * Suporta a opção interna `_allow_error` para não lançar exceção em 4xx/5xx.
      */
-    private function request(string $method, string $uri, array $options = [])
+    private function request(string $method, string $path, array $options = [])
     {
         $this->ensureToken();
 
@@ -142,17 +184,19 @@ class GlobalScmClient
             ['Authorization' => 'Bearer ' . $this->cfg->access_token]
         );
 
+        $url = $this->buildUrl($method, $path);
+
         try {
-            $res = $this->http->request($method, $uri, $options);
+            $res = $this->http->request($method, $url, $options);
         } catch (GuzzleException $e) {
-            throw new \RuntimeException("Erro HTTP ao chamar {$uri}: " . $e->getMessage(), 0, $e);
+            throw new \RuntimeException("Erro HTTP ao chamar {$path}: " . $e->getMessage(), 0, $e);
         }
 
         if ($res->getStatusCode() === 401) {
             // tenta renovar e repetir uma vez
             $this->loginAndPersist();
             $options['headers']['Authorization'] = 'Bearer ' . $this->cfg->access_token;
-            $res = $this->http->request($method, $uri, $options);
+            $res = $this->http->request($method, $url, $options);
         }
 
         $status = $res->getStatusCode();
@@ -160,16 +204,19 @@ class GlobalScmClient
         $data   = json_decode($raw, true);
 
         if ($status >= 400) {
-            Log::warning('Chamada externa retornou erro', ['uri' => $uri, 'status' => $status, 'body' => $raw]);
+            Log::warning('Chamada externa retornou erro', ['path' => $path, 'status' => $status, 'body' => $raw]);
             if ($allowError) {
                 return is_array($data) ? $data : ['_error_status' => $status, '_raw' => $raw];
             }
-            throw new \RuntimeException("API externa respondeu {$status} para {$uri}");
+            throw new \RuntimeException("API externa respondeu {$status} para {$path}");
         }
 
         return is_array($data) ? $data : [];
     }
 
+    /** ==================== MÉTODOS PÚBLICOS ================= */
+
+    /** Backoffice (POST) */
     public function dailyReport(array $payload): array
     {
         return $this->request('POST', '/internal/api/v1/reports/daily-transactions', [
@@ -178,7 +225,7 @@ class GlobalScmClient
     }
 
     /**
-     * Lista contas (normalizado).
+     * Listar contas (LEGACY, GET /internal/api/v1/account) — normalizado.
      * Retorna: ['page','limit','totalItems','items'=>[...]]
      */
     public function listAccounts(int $page = 1, int $limit = 10): array
@@ -216,7 +263,7 @@ class GlobalScmClient
         ];
     }
 
-    /** Transações paginadas + filtros (normalizado) */
+    /** Transações paginadas (Backoffice, GET) — normalizado */
     public function transactions(array $params): array
     {
         $query = [
@@ -228,6 +275,7 @@ class GlobalScmClient
             'subtype'          => $params['subtype'] ?? null,
             'q'                => $params['q'] ?? null,
             'digitalAccountId' => $params['digitalAccountId'] ?? null,
+            'type'             => $params['type'] ?? null,
         ];
         $query = array_filter($query, fn($v) => $v !== null && $v !== '');
 
@@ -251,11 +299,20 @@ class GlobalScmClient
         ];
     }
 
-    /** Saldos (normalizado → items), com filtro opcional por conta */
+    /**
+     * Saldos (LEGACY, GET /internal/api/v1/balances) — normalizado.
+     */
     public function balances(int $page = 1, int $limit = 50, ?int $digitalAccountId = null): array
     {
-        $query = ['page' => $page, 'limit' => $limit];
-        $data  = $this->request('GET', '/internal/api/v1/balances', ['query' => $query]);
+        $query = [
+            'page'  => $page,
+            'limit' => $limit,
+        ];
+        if ($digitalAccountId) {
+            $query['digitalAccountId'] = $digitalAccountId;
+        }
+
+        $data = $this->request('GET', '/internal/api/v1/balances', ['query' => $query]);
 
         $pageN  = (int)($data['current_page'] ?? $data['page'] ?? 1);
         $limitN = (int)($data['total_per_pages'] ?? $data['limit'] ?? $limit);
@@ -264,13 +321,7 @@ class GlobalScmClient
         $list = Arr::get($data, 'list') ?? Arr::get($data, 'items') ?? [];
         $list = is_array($list) ? $list : [];
 
-        if ($digitalAccountId) {
-            $list = array_values(array_filter($list, function ($row) use ($digitalAccountId) {
-                $id = (int)($row['digital_account_id'] ?? $row['digitalAccountId'] ?? 0);
-                return $id === (int)$digitalAccountId;
-            }));
-        }
-
+        // Ordena do mais recente pro mais antigo (quando houver data)
         usort($list, function ($a, $b) {
             $da = strtotime($a['dt_balance'] ?? $a['date'] ?? '1970-01-01');
             $db = strtotime($b['dt_balance'] ?? $b['date'] ?? '1970-01-01');
@@ -305,7 +356,26 @@ class GlobalScmClient
         ];
     }
 
-    /** Resumo diário agregado localmente */
+    /** Status v2 (Backoffice, GET) */
+    public function transactionStatusV2(array $query): array
+    {
+        $q = array_filter([
+            'clientRequestId' => $query['clientRequestId'] ?? null,
+            'endToEndId'      => $query['endToEndId'] ?? null,
+        ], fn($v) => $v !== null && $v !== '');
+
+        return $this->request('GET', '/internal/api/v1/transactions/status/v2', ['query' => $q]);
+    }
+
+    /** Report de transações (Backoffice, POST) */
+    public function transactionsReport(array $payload): array
+    {
+        return $this->request('POST', '/internal/api/v1/reports/transactions', [
+            'json' => array_filter($payload, fn($v) => $v !== null && $v !== ''),
+        ]);
+    }
+
+    /** Resumo diário agregado localmente (usa transactions GET) */
     public function dailySummary(array $params): array
     {
         $tz          = 'America/Sao_Paulo';

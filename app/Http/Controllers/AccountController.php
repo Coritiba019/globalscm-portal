@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\GlobalScmClient;
+use App\Support\AccountLabels;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -24,14 +25,20 @@ class AccountController extends Controller
         $q     = trim((string) $request->query('q', ''));
 
         try {
-            // 1) Busca contas na API externa (formato normalizado pelo service)
+            // 1) Busca contas na API externa (normalizado pelo service)
             $resp   = $client->listAccounts($page, $limit);
-            $items  = Arr::get($resp, 'items', []);      // normalizados: digital_account_id, agency, account, digit, company, active...
+            $items  = Arr::get($resp, 'items', []);      // digital_account_id, agency, account, digit, company, active...
             $total  = (int) Arr::get($resp, 'totalItems', count($items));
             $pageN  = (int) Arr::get($resp, 'page', $page);
             $limN   = (int) Arr::get($resp, 'limit', $limit);
 
-            // 2) Filtro leve no servidor se tiver "q"
+            // 2) Mapeia rótulo e injeta __label
+            $items = array_map(function (array $acc) {
+                $acc['__label'] = AccountLabels::label((string) Arr::get($acc, 'account', ''));
+                return $acc;
+            }, $items);
+
+            // 3) Filtro leve local (inclui rótulo)
             if ($q !== '') {
                 $needle = mb_strtolower($q);
                 $items = array_values(array_filter($items, function ($acc) use ($needle) {
@@ -39,21 +46,20 @@ class AccountController extends Controller
                     $agency  = (string) Arr::get($acc, 'agency', '');
                     $account = (string) Arr::get($acc, 'account', '');
                     $company = (string) Arr::get($acc, 'company.name', '');
-                    $hay = mb_strtolower("$id $agency $account $company");
+                    $label   = (string) Arr::get($acc, '__label', '');
+                    $hay = mb_strtolower("$id $agency $account $company $label");
                     return Str::contains($hay, $needle);
                 }));
-                // quando filtramos localmente, ajusta total
                 $total = count($items);
             }
 
-            // 3) Índice de saldos (duas páginas p/ ~100 últimas posições)
+            // 4) Índice de saldos (duas páginas p/ ~100 últimas posições)
             $balancesIdx = [];
             foreach ([1, 2] as $pg) {
                 $b    = $client->balances($pg, 50);
                 $list = Arr::get($b, 'items', []);
                 foreach ($list as $row) {
                     $da = (int) Arr::get($row, 'digital_account_id');
-                    // mantém o primeiro (já ordenado por dt_balance desc)
                     if (!isset($balancesIdx[$da])) {
                         $balancesIdx[$da] = [
                             'balance'    => Arr::get($row, 'balance'),
@@ -63,7 +69,7 @@ class AccountController extends Controller
                 }
             }
 
-            // 4) Enriquecer itens com __balance / __dt_balance
+            // 5) Enriquecer itens com __balance / __dt_balance
             $items = array_map(function ($acc) use ($balancesIdx) {
                 $id = (int) Arr::get($acc, 'digital_account_id');
                 $acc['__balance']    = Arr::get($balancesIdx, "$id.balance", null);
@@ -71,7 +77,7 @@ class AccountController extends Controller
                 return $acc;
             }, $items);
 
-            // 5) Paginação Laravel (LengthAwarePaginator) — mantém querystring
+            // 6) Paginação Laravel
             $paginator = new LengthAwarePaginator(
                 $items,
                 $total,
@@ -79,12 +85,12 @@ class AccountController extends Controller
                 $pageN,
                 [
                     'path'  => route('select-account'),
-                    'query' => $request->query(), // preserva q/limit
+                    'query' => $request->query(),
                 ]
             );
 
             return view('accounts.select', [
-                'accounts'   => $paginator,      // agora tem ->links()
+                'accounts'   => $paginator,
                 'totalItems' => $total,
                 'page'       => $pageN,
                 'limit'      => $limN,

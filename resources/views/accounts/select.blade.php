@@ -24,7 +24,6 @@
     box-shadow: 0 14px 34px rgba(0,0,0,.08);
   }
 
-  /* Destaque quando selecionada + selo discreto e elegante */
   .acc-card.selected{
     border-color:#b6e3ff;
     box-shadow: 0 0 0 3px rgba(14,165,233,.14), 0 12px 28px rgba(0,0,0,.06);
@@ -37,7 +36,6 @@
     font-weight:700; font-size:.78rem;
   }
 
-  /* Cabeçalho minimalista */
   .acc-header{
     display:flex; align-items:start; justify-content:space-between;
     gap:.9rem; padding:1rem 1rem .5rem 1rem;
@@ -46,7 +44,6 @@
   .acc-title{ font-weight:800; line-height:1.15; color:#0f172a; }
   .acc-sub{ color:#6c757d; font-size:.85rem; }
 
-  /* Chips de meta com excelente contraste no claro */
   .acc-meta{ display:flex; gap:.5rem; flex-wrap:wrap; padding:.75rem 1rem; }
   .chip{
     display:inline-flex; align-items:center; gap:.5rem;
@@ -58,7 +55,6 @@
   }
   .chip .bi{ opacity:.7; }
 
-  /* Saldo */
   .acc-balance-wrap{ padding:.25rem 1rem .9rem 1rem; }
   .acc-balance-label{ color:#6c757d; font-size:.8rem; margin-bottom:.1rem; }
   .acc-balance{
@@ -66,13 +62,11 @@
   }
   .acc-balance small{ color:#64748b; font-weight:600; }
 
-  /* Rodapé */
   .acc-footer{
     display:flex; flex-wrap:wrap; gap:.5rem;
     padding:1rem; border-top:1px dashed var(--border);
   }
 
-  /* Botões */
   .btn-ghost{
     background:#fff; border:1px solid var(--border); color:#0f172a;
   }
@@ -86,7 +80,6 @@
   }
   .btn-primary-strong:hover{ filter:brightness(1.06); }
 
-  /* Pílula no topo da página para conta ativa */
   .top-selected{
     background:#e6f4ff; border:1px solid #b6e3ff; color:#0b3a67;
     font-weight:700;
@@ -95,6 +88,11 @@
 @endpush
 
 @section('content')
+@php
+  // Disponibiliza a classe de rótulos no Blade
+  use App\Support\AccountLabels;
+@endphp
+
 <div class="container-xl">
   <div class="d-flex align-items-center justify-content-between mb-3">
     <div>
@@ -123,7 +121,7 @@
           <i class="bi bi-search"></i>
         </span>
         <input type="text" class="form-control border-start-0" name="q" value="{{ $q }}"
-               placeholder="Buscar por conta, agência, empresa..." autocomplete="off">
+               placeholder="Buscar por conta, agência, empresa ou rótulo..." autocomplete="off">
       </div>
     </div>
     <div class="col-md-2">
@@ -162,6 +160,7 @@
           $balance = data_get($acc, '__balance');
           $dtBal   = data_get($acc, '__dt_balance');
           $company = trim((string) data_get($acc, 'company.name', '—'));
+          $label   = (string) data_get($acc, '__label') ?: AccountLabels::label($account);
           $isSelected = session('digital_account_id') == $id;
         @endphp
 
@@ -174,8 +173,12 @@
 
           <div class="acc-header">
             <div class="flex-grow-1">
-              <div class="acc-title text-truncate" title="{{ $company }}">{{ $company ?: '—' }}</div>
-              <div class="acc-sub">ID #{{ $id }}</div>
+              <div class="acc-title text-truncate" title="{{ $company }}">
+                {{ $company ?: '—' }}
+              </div>
+              <div class="acc-sub">
+                ID #{{ $id }}
+              </div>
             </div>
           </div>
 
@@ -186,6 +189,12 @@
             <span class="chip" title="Conta">
               <i class="bi bi-credit-card-2-front"></i> Conta <strong>{{ $account ?: '—' }}</strong>
             </span>
+            {{-- Novo: rótulo mapeado (ex.: "Pagopay - 00100001672") --}}
+            @if($account)
+              <span class="chip" title="Identificador mapeado">
+                <i class="bi bi-tag"></i> {{ $label }} - <strong>{{ $account }}</strong>
+              </span>
+            @endif
           </div>
 
           <div class="acc-balance-wrap">
@@ -221,7 +230,6 @@
       @endforeach
     </div>
 
-    {{-- Paginação (se $accounts for Paginator/LengthAwarePaginator) --}}
     @if(method_exists($accounts, 'links'))
       <div class="mt-3 d-flex justify-content-center">
         {{ $accounts->withQueryString()->onEachSide(1)->links('pagination::bootstrap-5') }}
