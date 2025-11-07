@@ -107,6 +107,11 @@
     .page-head{ gap:.6rem }
     .context-wrap{ gap:.35rem }
     .context-line{ width:100% }
+    /* Esconde "Subtipo" no mobile p/ ganhar espaço */
+    .col-subtype { display: none; }
+  }
+  @media (min-width: 577px){
+    .col-subtype { display: table-cell; }
   }
 </style>
 @endpush
@@ -265,36 +270,42 @@
             <tr>
               <th style="width: 160px;">Data/Hora</th>
               <th style="width: 90px;">Tipo</th>
-              <th style="width: 120px;">Subtipo</th>
-              <th>Descrição</th>
+              <th class="col-subtype" style="width: 120px;">Subtipo</th>
               <th class="text-end" style="width: 140px;">Valor</th>
               <th style="width: 120px;">Status</th>
+              <th>Descrição</th> {{-- descrição por último --}}
             </tr>
           </thead>
           <tbody>
           @forelse ($tx as $t)
             @php
-              $dt = \Illuminate\Support\Carbon::parse($t['dtHrTransaction'])->timezone('America/Sao_Paulo');
-              $amt= (float) $t['amount'];
-              $isC = ($t['type'] ?? 'C') === 'C';
-              $st  = $t['status'] ?? '—';
+              $dt   = \Illuminate\Support\Carbon::parse($t['dtHrTransaction'])->timezone('America/Sao_Paulo');
+              $amt  = (float) ($t['amount'] ?? 0);
+              $isC  = ($t['type'] ?? 'C') === 'C';
+              $st   = $t['status'] ?? '—';
+              $sub  = $t['subType'] ?? '—';
+              $desc = trim((string) ($t['description'] ?? '—'));
               $badgeClass = $st==='SUCCESS' ? 'success' : ($st==='ERROR' ? 'error' : 'neutral');
             @endphp
             <tr>
               <td class="mono">{{ $dt->format('d/m/Y H:i:s') }}</td>
               <td>
                 @if($isC)
-                  <span class="badge bg-success-subtle text-success fw-semibold"><i class="bi bi-arrow-down-circle me-1"></i>Crédito</span>
+                  <span class="badge bg-success-subtle text-success fw-semibold">
+                    <i class="bi bi-arrow-down-circle me-1"></i>Crédito
+                  </span>
                 @else
-                  <span class="badge bg-danger-subtle text-danger fw-semibold"><i class="bi bi-arrow-up-circle me-1"></i>Débito</span>
+                  <span class="badge bg-danger-subtle text-danger fw-semibold">
+                    <i class="bi bi-arrow-up-circle me-1"></i>Débito
+                  </span>
                 @endif
               </td>
-              <td><span class="text-uppercase">{{ $t['subType'] ?? '—' }}</span></td>
-              <td class="text-truncate" style="max-width:520px;" title="{{ $t['description'] ?? '' }}">{{ $t['description'] ?? '—' }}</td>
+              <td class="text-uppercase col-subtype">{{ $sub }}</td>
               <td class="text-end mono {{ $isC ? 'text-success' : 'text-danger' }}">
                 {{ $isC ? '+' : '-' }} R$ {{ number_format($amt, 2, ',', '.') }}
               </td>
               <td><span class="badge badge-soft {{ $badgeClass }}">{{ $st }}</span></td>
+              <td class="text-truncate" style="max-width:520px;" title="{{ $desc }}">{{ $desc ?: '—' }}</td>
             </tr>
           @empty
             <tr>
@@ -305,6 +316,13 @@
         </table>
       </div>
     </div>
+
+    {{-- paginação (só aparece se $tx for paginator) --}}
+    @if ($tx instanceof \Illuminate\Contracts\Pagination\Paginator || $tx instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)
+      <div class="card-footer d-flex justify-content-center">
+        {{ $tx->withQueryString()->onEachSide(1)->links('pagination::bootstrap-5') }}
+      </div>
+    @endif
   </div>
 </div>
 

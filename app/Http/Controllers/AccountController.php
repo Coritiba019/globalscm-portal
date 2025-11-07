@@ -20,25 +20,37 @@ class AccountController extends Controller
 
     public function selectIndex(Request $request, GlobalScmClient $client)
     {
+        $user  = $request->user();
         $limit = (int) $request->query('limit', 25);
         $page  = (int) $request->query('page', 1);
         $q     = trim((string) $request->query('q', ''));
 
         try {
-            // 1) Lista contas (serviço já normaliza): digital_account_id, agency, account, digit, company, active...
+            // 1) Lista contas (serviço já normaliza)
             $resp   = $client->listAccounts($page, $limit);
             $items  = Arr::get($resp, 'items', []);
             $total  = (int) Arr::get($resp, 'totalItems', count($items));
             $pageN  = (int) Arr::get($resp, 'page', $page);
             $limN   = (int) Arr::get($resp, 'limit', $limit);
 
-            // 2) Injeta rótulo mapeado
+            // 2) **Filtra pelas permissões do usuário**
+            $allowed = $user->allowedDigitalIds(); // null => acesso a todas
+            if (is_array($allowed)) {
+                $allowedSet = array_flip($allowed);
+                $items = array_values(array_filter($items, function ($row) use ($allowedSet) {
+                    $id = (int) Arr::get($row, 'digital_account_id', 0);
+                    return $id && isset($allowedSet[$id]);
+                }));
+                $total = count($items);
+            }
+
+            // 3) Injeta rótulo mapeado
             $items = array_map(function (array $acc) {
                 $acc['__label'] = AccountLabels::label((string) Arr::get($acc, 'account', ''));
                 return $acc;
             }, $items);
 
-            // 3) Filtro local (inclui rótulo)
+            // 4) Filtro de busca local (id/agency/account/company/label)
             if ($q !== '') {
                 $needle = mb_strtolower($q);
                 $items = array_values(array_filter($items, function ($acc) use ($needle) {
@@ -53,7 +65,7 @@ class AccountController extends Controller
                 $total = count($items);
             }
 
-            // 4) Índice de saldos (2 páginas x 50 = ~100 mais recentes)
+            // 5) Índice de saldos (opcional — top saldos mais recentes)
             $balancesIdx = [];
             foreach ([1, 2] as $pg) {
                 $b    = $client->balances($pg, 50);
@@ -69,7 +81,7 @@ class AccountController extends Controller
                 }
             }
 
-            // 5) Enriquecer itens com saldo e data
+            // 6) Enriquecer itens com saldo e data
             $items = array_map(function ($acc) use ($balancesIdx) {
                 $id = (int) Arr::get($acc, 'digital_account_id');
                 $acc['__balance']    = Arr::get($balancesIdx, "$id.balance", null);
@@ -77,7 +89,7 @@ class AccountController extends Controller
                 return $acc;
             }, $items);
 
-            // 6) Ordenar por saldo DESC; empates por dt_balance DESC
+            // 7) Ordenar por saldo DESC; empates por dt_balance DESC
             usort($items, function(array $a, array $b){
                 $aBal = is_null($a['__balance']) ? -INF : (float) $a['__balance'];
                 $bBal = is_null($b['__balance']) ? -INF : (float) $b['__balance'];
@@ -87,11 +99,16 @@ class AccountController extends Controller
                 return $bDt <=> $aDt;
             });
 
-            // 7) Paginação
+            // 8) Paginação
             $paginator = new LengthAwarePaginator(
                 $items, $total, $limN, $pageN,
                 ['path' => route('select-account'), 'query' => $request->query()]
             );
+
+            // Mensagens de UX quando usuário não tem nenhuma conta permitida
+            $noAccessMsg = (empty($items) && !$user->can_access_all)
+                ? 'Você não possui acesso a nenhuma conta. Solicite permissão ao administrador.'
+                : null;
 
             return view('accounts.select', [
                 'accounts'   => $paginator,
@@ -100,6 +117,7 @@ class AccountController extends Controller
                 'limit'      => $limN,
                 'q'          => $q,
                 'pendingMsg' => session('pending_message'),
+                'noAccessMsg'=> $noAccessMsg,
             ]);
 
         } catch (\Illuminate\Http\Client\RequestException $e) {
@@ -118,13 +136,24 @@ class AccountController extends Controller
 
     public function selectStore(Request $request)
     {
+        $user = $request->user();
+
         $validated = $request->validate([
             'digital_account_id' => ['required','integer','min:1'],
             'agency'  => ['nullable','string','max:32'],
             'account' => ['nullable','string','max:32'],
         ]);
 
-        $request->session()->put('digital_account_id', (int) $validated['digital_account_id']);
+        $digital = (int) $validated['digital_account_id'];
+
+        // **Validação de permissão**: usuário só pode selecionar conta permitida
+        if (!$user->can_access_all && !$user->canAccessDigital($digital)) {
+            return redirect()->route('select-account')
+                ->with('error', 'Conta não permitida para seu usuário.');
+        }
+
+        // Persiste na sessão
+        $request->session()->put('digital_account_id', $digital);
         $request->session()->put('digital_account_agency', $validated['agency'] ?? null);
         $request->session()->put('digital_account_number', $validated['account'] ?? null);
 

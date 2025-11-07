@@ -53,7 +53,7 @@ class GlobalScmClient
         if (
             ($method === 'POST' && $path === '/internal/api/v1/auth/login') ||
             ($method === 'GET'  && $path === '/internal/api/v1/account')   ||
-            ($method === 'GET'  && $path === '/internal/api/v1/balances')  // <- balances vai para LEGACY
+            ($method === 'GET'  && $path === '/internal/api/v1/balances')
         ) {
             return self::HOST_LEGACY;
         }
@@ -224,10 +224,7 @@ class GlobalScmClient
         ]);
     }
 
-    /**
-     * Listar contas (LEGACY, GET /internal/api/v1/account) — normalizado.
-     * Retorna: ['page','limit','totalItems','items'=>[...]]
-     */
+    /** Listar contas (LEGACY) — normalizado. */
     public function listAccounts(int $page = 1, int $limit = 10): array
     {
         $query = ['page' => $page, 'limit' => $limit];
@@ -263,45 +260,69 @@ class GlobalScmClient
         ];
     }
 
-    /** Transações paginadas (Backoffice, GET) — normalizado */
+    /**
+     * Transações paginadas (Backoffice, GET)
+     * Retorna EM DOIS FORMATOS para compatibilidade:
+     *  - Normalizado:  page, limit, totalItems, items[]
+     *  - "Backoffice-like": size, data.balance, data.transactions[]
+     */
     public function transactions(array $params): array
     {
+        // Monta query aceitando aliases usuais
         $query = [
             'page'             => $params['page'] ?? 1,
             'limit'            => $params['limit'] ?? 25,
-            'initialDate'      => $params['initialDate'] ?? null,
-            'finalDate'        => $params['finalDate'] ?? null,
+            'initialDate'      => $params['initialDate'] ?? $params['initial'] ?? null,
+            'finalDate'        => $params['finalDate']   ?? $params['final']   ?? null,
             'status'           => $params['status'] ?? null,
-            'subtype'          => $params['subtype'] ?? null,
+            // Backoffice utiliza "subType" (T maiúsculo); aceitamos "subtype" também
+            'subType'          => $params['subType'] ?? $params['subtype'] ?? null,
+            'type'             => $params['type'] ?? null,       // 'C'|'D'
             'q'                => $params['q'] ?? null,
-            'digitalAccountId' => $params['digitalAccountId'] ?? null,
-            'type'             => $params['type'] ?? null,
+            'digitalAccountId' => $params['digitalAccountId'] ?? $params['digital'] ?? null,
         ];
         $query = array_filter($query, fn($v) => $v !== null && $v !== '');
 
-        $data = $this->request('GET', '/internal/api/v1/transactions', ['query' => $query]);
+        $raw = $this->request('GET', '/internal/api/v1/transactions', ['query' => $query]);
 
-        $page       = (int)($data['page'] ?? 1);
-        $limit      = (int)($data['limit'] ?? ($data['size'] ?? 25));
-        $totalItems = (int)($data['totalItems'] ?? 0);
+        // Tenta identificar os diferentes formatos possíveis do provedor
+        $page       = (int)($raw['page'] ?? 1);
+        $limit      = (int)($raw['limit'] ?? ($raw['size'] ?? 25));
+        $totalItems = (int)($raw['totalItems'] ?? $raw['size'] ?? 0);
 
-        $items = $data['items']
-            ?? Arr::get($data, 'data.transactions')
-            ?? Arr::get($data, 'list')
+        // Tabela de itens pode vir em várias chaves
+        $items = $raw['items']
+            ?? Arr::get($raw, 'data.transactions')
+            ?? Arr::get($raw, 'list')
             ?? [];
 
+        if (!is_array($items)) {
+            $items = [];
+        }
+
+        // Balance pode vir dentro de data.balance
+        $balance = Arr::get($raw, 'data.balance', null);
+
+        // Retorno combinado (normalizado + compatível com a doc do Backoffice)
         return [
+            // Normalizado
             'page'       => $page,
             'limit'      => $limit,
             'totalItems' => $totalItems,
-            'items'      => is_array($items) ? $items : [],
-            '_raw'       => $data,
+            'items'      => $items,
+
+            // Compat Backoffice
+            'size' => $totalItems,
+            'data' => [
+                'balance'      => $balance,
+                'transactions' => $items,
+            ],
+
+            '_raw' => $raw,
         ];
     }
 
-    /**
-     * Saldos (LEGACY, GET /internal/api/v1/balances) — normalizado.
-     */
+    /** Saldos (LEGACY) — normalizado. */
     public function balances(int $page = 1, int $limit = 50, ?int $digitalAccountId = null): array
     {
         $query = [
@@ -397,7 +418,7 @@ class GlobalScmClient
                 'finalDate'        => $finalDate,
                 'digitalAccountId' => $digital,
                 'status'           => $params['status']  ?? null,
-                'subtype'          => $params['subtype'] ?? null,
+                'subType'          => $params['subType'] ?? $params['subtype'] ?? null,
                 'type'             => $params['type']    ?? null,
             ]);
 
@@ -420,6 +441,7 @@ class GlobalScmClient
 
         foreach ($all as $row) {
             $rawDate = Arr::get($row, 'dt_hr_transaction')
+                ?? Arr::get($row, 'dtHrTransaction')
                 ?? Arr::get($row, 'createdAt')
                 ?? Arr::get($row, 'date')
                 ?? Arr::get($row, 'dateCreated')
